@@ -1,0 +1,153 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0107 
+header_name {.h} 
+code_name {.cxx}
+class ShowMeshUI {open selected
+} {
+  Function {ShowMeshUI()} {open
+  } {
+    Fl_Window main_window {open
+      xywh {366 221 640 480} type Double box UP_BOX resizable visible
+    } {
+      Fl_Input command_input {
+        label {Command:}
+        callback {execute(o->value());}
+        xywh {80 445 555 30}
+        code0 {\#include "command.h"}
+        code1 {o->when(FL_WHEN_ENTER_KEY|FL_WHEN_NOT_CHANGED);}
+      }
+      Fl_Box showmesh_window {
+        xywh {5 5 365 440} labeltype NO_LABEL resizable
+        code0 {\#include "showmesh.h"}
+        code1 {\#include "command.h"}
+        code2 {set_window(o);}
+        class ShowMeshWindow
+      }
+      Fl_Button pane_toggle {
+        label {>}
+        callback {int dx = tabs_pane->w();
+static int dp = dx;
+
+if (o->label()[0] == '>') {
+	o->label("<");
+	showmesh_window->size(showmesh_window->w() + dx, showmesh_window->h());
+	o->position(o->x() + dx, o->y());
+	tabs_pane->hide();
+} else {
+	o->label(">");
+	tabs_pane->resize(tabs_pane->x() + dx - dp, tabs_pane->y(), dp, tabs_pane->h());
+	dx = dp;
+	showmesh_window->size(showmesh_window->w() - dx, showmesh_window->h());
+	o->position(o->x() - dx, o->y());
+	tabs_pane->show();
+}
+main_window->init_sizes();}
+        xywh {370 5 10 440} align 32
+      }
+      Fl_Tabs tabs_pane {
+        xywh {380 5 255 440}
+      } {
+        Fl_Group meshes_tab {
+          label Meshes open
+          xywh {380 25 250 420}
+        } {
+          Fl_Browser mesh_browser {
+            callback {if (o->value())
+	select_mesh(o->data(o->value()));}
+            xywh {380 30 250 185} type Hold
+          }
+          Fl_Group {} {open
+            xywh {380 224 250 161}
+          } {
+            Fl_Value_Slider col_A {
+              label Alpha
+              callback {update_mesh();}
+              xywh {595 250 30 130} textsize 14
+            }
+            Fl_Box {} {
+              label Color
+              xywh {427 227 45 16}
+            }
+            Fl_Group col_RGB {
+              callback {update_mesh();}
+              xywh {380 250 210 135}
+              code0 {\#include <FL/Fl_Color_Chooser.H>}
+              class Fl_Color_Chooser
+            } {}
+            Fl_Box color_box {
+              xywh {472 224 50 21} box FLAT_BOX color 7
+            }
+            Fl_Check_Button mesh_visible {
+              label Show
+              callback {update_mesh();}
+              xywh {540 227 64 15} down_box DOWN_BOX
+            }
+          }
+        }
+        Fl_Group settings_tab {
+          label Settings open
+          xywh {380 25 250 420} hide
+        } {}
+      }
+    }
+  }
+  Function {add_mesh(const char *name)} {open return_type {MeshRender *}
+  } {
+    code {MeshRender *data = showmesh_window->addMesh(name);
+if (data != NULL) {
+	mesh_browser->add(name, data);
+	if (mesh_browser->value() == 0) {
+		mesh_browser->value(1);
+		select_mesh(mesh_browser->data(1));
+	}
+}
+return data;} {}
+  }
+  Function {select_mesh(void *data)} {open return_type void
+  } {
+    code {double r, b, g, a;
+MeshRender *m = (MeshRender *)data;
+
+if (m == NULL)
+	return;
+
+m->getColor(r, g, b);
+m->getAlpha(a);
+col_RGB->rgb(r, g, b);
+col_A->value(a);
+color_box->color(fl_rgb_color((unsigned char)(r * 255), (unsigned char)(g * 255), (unsigned char)(b * 255)));
+color_box->redraw();
+mesh_visible->value(!m->getFlag(MRF_HIDDEN));} {}
+  }
+  Function {update_mesh()} {open return_type void
+  } {
+    code {int sel = mesh_browser->value();
+if (sel == 0)
+	return;
+MeshRender *m = (MeshRender *) mesh_browser->data(sel);
+if (m == NULL)
+	return;
+
+double r = col_RGB->r();
+double g = col_RGB->g();
+double b = col_RGB->b();
+double a = col_A->value();
+m->setColor(r, g, b);
+m->setAlpha(a);
+color_box->color(fl_rgb_color((unsigned char)(r * 255), (unsigned char)(g * 255), (unsigned char)(b * 255)));
+color_box->redraw();
+showmesh_window->redraw();
+if (mesh_visible->value())
+	m->clearFlag(MRF_HIDDEN);
+else
+	m->setFlag(MRF_HIDDEN);} {}
+  }
+  Function {quit(void)} {open
+  } {
+    code {m_quit = true;
+main_window->hide();} {selected
+    }
+  }
+  decl {int m_quit = 0;} {public
+  }
+} 
